@@ -127,8 +127,6 @@ func (e *Executor) getModules() error {
 	}
 
 	for _, module := range e.TfRepoCfg.Modules {
-		fmt.Println(module.Url)
-
 		if err = e.cloneRepo(module.Url, module.Name, module.Ref, moduleDir); err != nil {
 			return err
 		}
