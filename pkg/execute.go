@@ -24,8 +24,6 @@ type VaultSecret struct {
 type Executor struct {
 	TfRepoCfg     *TfRepo
 	vaultClient   *vault.Client
-	glUsername    string
-	glToken       string
 	workdir       string
 	vaultAddr     string
 	vaultRoleId   string
@@ -34,8 +32,6 @@ type Executor struct {
 
 func Run(cfgPath,
 	workdir,
-	glUsername,
-	glToken,
 	vaultAddr,
 	roleId,
 	secretId string) error {
@@ -56,8 +52,6 @@ func Run(cfgPath,
 	e := &Executor{
 		TfRepoCfg:     targetRepo,
 		vaultClient:   initVaultClient(vaultAddr, roleId, secretId),
-		glUsername:    glUsername,
-		glToken:       glToken,
 		workdir:       workdir,
 		vaultAddr:     vaultAddr,
 		vaultRoleId:   roleId,

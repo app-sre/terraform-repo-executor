@@ -6,8 +6,6 @@ An application for performing terraform operations of target git repositories.
 
 ## Environment Variables
 ### Required
-* `GITLAB_USERNAME`
-* `GITLAB_TOKEN`
 * `VAULT_ADDR`
 * `VAULT_ROLE_ID`
 * `VAULT_SECRET_ID`
