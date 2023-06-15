@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	vault "github.com/hashicorp/vault/api"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,7 +18,6 @@ func TestInitVaultClient(t *testing.T) {
 		body, err := io.ReadAll(r.Body)
 		assert.Nil(t, err)
 		assert.Equal(t, `{"role_id":"foo","secret_id":"bar"}`, string(body))
-
 		fmt.Fprintf(w, `{"auth": {"client_token": "%s"}}`, mockedToken)
 	}))
 	defer vaultMock.Close()
@@ -27,4 +27,43 @@ func TestInitVaultClient(t *testing.T) {
 	client, err := initVaultClient(vaultMock.URL, roleId, secretId)
 	assert.Nil(t, err)
 	assert.Equal(t, mockedToken, client.Token())
+}
+
+func TestGetVaultTfSecret(t *testing.T) {
+	mockedData := `{
+		"data": {
+			"data": {
+			  	"aws_access_key_id": "foo",
+				"aws_secret_access_key": "bar",
+				"region": "weast",
+				"bucket": "head"
+			},
+			"metadata": {}
+		}
+}`
+	vaultMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.Path, "v1/terraform/data/stage")
+		assert.Equal(t, "3", r.URL.Query().Get("version"))
+		fmt.Fprint(w, mockedData)
+	}))
+	defer vaultMock.Close()
+
+	client, _ := vault.NewClient(&vault.Config{
+		Address: vaultMock.URL,
+	})
+
+	actual, err := getVaultTfSecret(client, VaultSecret{
+		Path:    "terraform/stage",
+		Version: 3,
+	})
+	assert.Nil(t, err)
+
+	expected := TfCreds{
+		AccessKey: "foo",
+		SecretKey: "bar",
+		Region:    "weast",
+		Bucket:    "head",
+	}
+
+	assert.Equal(t, expected, actual)
 }
