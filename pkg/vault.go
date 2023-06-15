@@ -2,19 +2,18 @@ package pkg
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	vault "github.com/hashicorp/vault/api"
 )
 
-func initVaultClient(addr, roleId, secretId string) *vault.Client {
+func initVaultClient(addr, roleId, secretId string) (*vault.Client, error) {
 	cfg := &vault.Config{
 		Address: addr,
 	}
 	client, err := vault.NewClient(cfg)
 	if err != nil {
-		log.Fatalf("Failed to create vault client %v", err)
+		return nil, err
 	}
 
 	// authenticate using approle
@@ -24,15 +23,15 @@ func initVaultClient(addr, roleId, secretId string) *vault.Client {
 	}
 	secret, err := client.Logical().Write("auth/approle/login", data)
 	if err != nil {
-		log.Fatalf("Failed to log in with AppRole: %v", err)
+		return nil, err
 	}
 	if secret == nil || secret.Auth == nil {
-		log.Fatal("No authentication data returned")
+		return nil, err
 	}
 
 	client.SetToken(secret.Auth.ClientToken)
 
-	return client
+	return client, nil
 }
 
 // standardized AppSRE terraform secret keys
