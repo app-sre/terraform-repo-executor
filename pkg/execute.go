@@ -65,7 +65,7 @@ func Run(cfgPath,
 	for _, repo := range cfg.Repos {
 		err = e.execute(repo, cfg.DryRun)
 		if err != nil {
-			log.Printf("Error executing terraform operations for: %s", repo.Name)
+			log.Printf("Error executing terraform operations for: %s\n", repo.Name)
 			log.Println(err)
 			errCounter++
 		}
