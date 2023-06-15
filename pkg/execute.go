@@ -53,8 +53,13 @@ func Run(cfgPath,
 		return err
 	}
 
+	vaultClient, err := initVaultClient(vaultAddr, roleId, secretId)
+	if err != nil {
+		return err
+	}
+
 	e := &Executor{
-		vaultClient:   initVaultClient(vaultAddr, roleId, secretId),
+		vaultClient:   vaultClient,
 		workdir:       workdir,
 		vaultAddr:     vaultAddr,
 		vaultRoleId:   roleId,
