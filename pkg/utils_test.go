@@ -30,9 +30,7 @@ repos:
 		defer os.Remove(cfgPath)
 
 		cfg, err := processConfig(cfgPath)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.Nil(t, err)
 
 		expected := TfRepo{
 			DryRun: true,
@@ -86,9 +84,7 @@ repos:
 		defer os.Remove(cfgPath)
 
 		cfg, err := processConfig(cfgPath)
-		if err != nil {
-			t.Fatal(err)
-		}
+		assert.Nil(t, err)
 
 		expected := TfRepo{
 			DryRun: true,
