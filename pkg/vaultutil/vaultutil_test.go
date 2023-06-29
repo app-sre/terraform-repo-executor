@@ -1,4 +1,4 @@
-package pkg
+package vaultutil
 
 import (
 	"fmt"
@@ -24,7 +24,7 @@ func TestInitVaultClient(t *testing.T) {
 
 	roleId := "foo"
 	secretId := "bar"
-	client, err := initVaultClient(vaultMock.URL, roleId, secretId)
+	client, err := InitVaultClient(vaultMock.URL, roleId, secretId)
 	assert.Nil(t, err)
 	assert.Equal(t, mockedToken, client.Token())
 }
@@ -52,17 +52,17 @@ func TestGetVaultTfSecret(t *testing.T) {
 		Address: vaultMock.URL,
 	})
 
-	actual, err := getVaultTfSecret(client, VaultSecret{
+	actual, err := GetVaultTfSecret(client, VaultSecret{
 		Path:    "terraform/stage",
 		Version: 3,
-	})
+	}, KV_V2)
 	assert.Nil(t, err)
 
-	expected := TfCreds{
-		AccessKey: "foo",
-		SecretKey: "bar",
-		Region:    "weast",
-		Bucket:    "head",
+	expected := map[string]interface{}{
+		"AccessKey": "foo",
+		"SecretKey": "bar",
+		"Region":    "weast",
+		"Bucket":    "head",
 	}
 
 	assert.Equal(t, expected, actual)

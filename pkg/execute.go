@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/app-sre/terraform-repo-executor/pkg/vaultutil"
 	vault "github.com/hashicorp/vault/api"
 )
 
@@ -13,32 +14,29 @@ type TfRepo struct {
 }
 
 type Repo struct {
-	Name   string      `yaml:"name" json:"name"`
-	Url    string      `yaml:"repository" json:"repository"`
-	Path   string      `yaml:"project_path" json:"project_path"`
-	Ref    string      `yaml:"ref" json:"ref"`
-	Delete bool        `yaml:"delete" json:"delete"`
-	Secret VaultSecret `yaml:"secret" json:"secret"`
-}
-
-type VaultSecret struct {
-	Path    string `yaml:"path" json:"path"`
-	Version int    `yaml:"version" json:"version"`
+	Name   string                `yaml:"name" json:"name"`
+	Url    string                `yaml:"repository" json:"repository"`
+	Path   string                `yaml:"project_path" json:"project_path"`
+	Ref    string                `yaml:"ref" json:"ref"`
+	Delete bool                  `yaml:"delete" json:"delete"`
+	Secret vaultutil.VaultSecret `yaml:"secret" json:"secret"`
 }
 
 type Executor struct {
-	vaultClient   *vault.Client
-	workdir       string
-	vaultAddr     string
-	vaultRoleId   string
-	vaultSecretId string
+	vaultClient      *vault.Client
+	workdir          string
+	vaultAddr        string
+	vaultRoleId      string
+	vaultSecretId    string
+	vaultTfKvVersion string
 }
 
 func Run(cfgPath,
 	workdir,
 	vaultAddr,
 	roleId,
-	secretId string) error {
+	secretId,
+	kvVersion string) error {
 
 	// clear working directory upon exit
 	defer executeCommand("/", "rm", []string{"-rf", workdir})
@@ -53,17 +51,18 @@ func Run(cfgPath,
 		return err
 	}
 
-	vaultClient, err := initVaultClient(vaultAddr, roleId, secretId)
+	vaultClient, err := vaultutil.InitVaultClient(vaultAddr, roleId, secretId)
 	if err != nil {
 		return err
 	}
 
 	// vault creds are stored for later usage when generating tfvars for vault provider
 	e := &Executor{
-		workdir:       workdir,
-		vaultAddr:     vaultAddr,
-		vaultRoleId:   roleId,
-		vaultSecretId: secretId,
+		workdir:          workdir,
+		vaultAddr:        vaultAddr,
+		vaultRoleId:      roleId,
+		vaultSecretId:    secretId,
+		vaultTfKvVersion: kvVersion,
 	}
 
 	errCounter := 0
@@ -94,7 +93,12 @@ func (e *Executor) execute(repo Repo, vaultClient *vault.Client, dryRun bool) er
 		return err
 	}
 
-	backendCreds, err := getVaultTfSecret(vaultClient, repo.Secret)
+	secret, err := vaultutil.GetVaultTfSecret(vaultClient, repo.Secret, e.vaultTfKvVersion)
+	if err != nil {
+		return err
+	}
+
+	backendCreds, err := extractTfCreds(secret)
 	if err != nil {
 		return err
 	}
