@@ -58,11 +58,11 @@ func TestGetVaultTfSecret(t *testing.T) {
 	}, KV_V2)
 	assert.Nil(t, err)
 
-	expected := map[string]interface{}{
-		"AccessKey": "foo",
-		"SecretKey": "bar",
-		"Region":    "weast",
-		"Bucket":    "head",
+	expected := VaultKvData{
+		"aws_access_key_id":     "foo",
+		"aws_secret_access_key": "bar",
+		"region":                "weast",
+		"bucket":                "head",
 	}
 
 	assert.Equal(t, expected, actual)
