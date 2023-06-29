@@ -29,7 +29,7 @@ func TestInitVaultClient(t *testing.T) {
 	assert.Equal(t, mockedToken, client.Token())
 }
 
-func TestGetVaultTfSecret(t *testing.T) {
+func TestGetVaultTfSecretV2(t *testing.T) {
 	mockedData := `{
 		"data": {
 			"data": {
@@ -56,6 +56,41 @@ func TestGetVaultTfSecret(t *testing.T) {
 		Path:    "terraform/stage",
 		Version: 3,
 	}, KV_V2)
+	assert.Nil(t, err)
+
+	expected := VaultKvData{
+		"aws_access_key_id":     "foo",
+		"aws_secret_access_key": "bar",
+		"region":                "weast",
+		"bucket":                "head",
+	}
+
+	assert.Equal(t, expected, actual)
+}
+
+func TestGetVaultTfSecretV1(t *testing.T) {
+	mockedData := `{
+		"data": {
+		  	"aws_access_key_id": "foo",
+			"aws_secret_access_key": "bar",
+			"region": "weast",
+			"bucket": "head"
+		}
+}`
+	vaultMock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Contains(t, r.URL.Path, "v1/terraform/stage")
+		fmt.Fprint(w, mockedData)
+	}))
+	defer vaultMock.Close()
+
+	client, _ := vault.NewClient(&vault.Config{
+		Address: vaultMock.URL,
+	})
+
+	actual, err := GetVaultTfSecret(client, VaultSecret{
+		Path:    "terraform/stage",
+		Version: 1,
+	}, KV_V1)
 	assert.Nil(t, err)
 
 	expected := VaultKvData{
