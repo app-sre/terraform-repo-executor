@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/app-sre/terraform-repo-executor/pkg/vaultutil"
@@ -209,6 +210,23 @@ func (e *Executor) processTfPlan(repo Repo, dryRun bool, envVars map[string]stri
 	tf, err := tfexec.NewTerraform(dir, tfBinaryLocation)
 	if err != nil {
 		return nil, err
+	}
+
+	// validate before initializing
+	if dryRun {
+		// Provider validation aims to prevent common errors like missing variables or not declaring the S3 backend
+		// it only runs in dry run mode since app-interface gates the apply step
+		log.Printf("Validating terraform provider configuration for %s", repo.Name)
+		validationResult := ValidateTerraformRepo(dir, GetDefaultValidationConfig())
+		if !validationResult.Valid {
+			var errorMsg strings.Builder
+			errorMsg.WriteString("Terraform provider validation failed:")
+			for _, err := range validationResult.Errors {
+				errorMsg.WriteString(fmt.Sprintf("\n  - %s", err.Error()))
+			}
+			return nil, fmt.Errorf("terraform provider validation failed: %s", errorMsg.String())
+		}
+		log.Printf("Terraform provider validation passed for %s", repo.Name)
 	}
 
 	log.Printf("Initializing terraform config for %s\n", repo.Name)
