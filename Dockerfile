@@ -1,4 +1,4 @@
-FROM  registry.access.redhat.com/ubi9/go-toolset:1.24.6-1755755147@sha256:d1c1f2af6122b0ea3456844210d6d9c4d96e78c128bc02fabeadf51239202221 AS builder
+FROM  registry.access.redhat.com/ubi9/go-toolset:1.24.6-1756993846@sha256:14c369670cf3473d8e9b93e42d120c01b79a6f13884c396a1c89b7ca46f859b7 AS builder
 WORKDIR /build
 RUN git config --global --add safe.directory /build
 COPY . .
@@ -8,7 +8,7 @@ FROM builder AS test
 
 RUN make lint vet
 
-FROM registry.access.redhat.com/ubi9:9.6-1755678605@sha256:b68c21b2dd3e72abcf2f8dcfc77580e4030564d1243bfcb7cd64ccc5aa3e0a25 AS downloader
+FROM registry.access.redhat.com/ubi9:9.6-1756915113@sha256:8f1496d50a66e41433031bf5bdedd4635520e692ccd76ffcb649cf9d30d669af AS downloader
 WORKDIR /download
 ENV TENV_VERSION=3.2.10
 
