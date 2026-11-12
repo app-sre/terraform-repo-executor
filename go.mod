@@ -1,6 +1,6 @@
 module github.com/app-sre/terraform-repo-executor
 
-go 1.24.6
+go 1.26.0
 
 require (
 	github.com/go-git/go-git/v5 v5.16.2
@@ -48,10 +48,10 @@ require (
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/zclconf/go-cty v1.16.3 // indirect
-	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/net v0.43.0 // indirect
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.28.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
+	golang.org/x/text v0.43.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
