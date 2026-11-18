@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"text/template"
@@ -162,6 +163,9 @@ func WriteTemplate[T TfVars | vaultutil.VaultKvData | TfCreds | StateVars](input
 
 // checks the generated terraform plan file to ensure that the fips endpoint is enabled in the AWS provider configuration
 func (e *Executor) fipsComplianceCheck(repo Repo, planFile string, tf *tfexec.Terraform) error {
+	tf.SetStdout(io.Discard)
+	defer tf.SetStdout(os.Stdout)
+
 	out, err := tf.ShowPlanFile(context.Background(), planFile)
 
 	if err != nil {
