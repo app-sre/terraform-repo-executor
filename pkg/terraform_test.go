@@ -3,10 +3,14 @@ package pkg
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/app-sre/terraform-repo-executor/pkg/vaultutil"
+	"github.com/hashicorp/terraform-exec/tfexec"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -164,4 +168,77 @@ func TestWriteTemplate(t *testing.T) {
 
 		assert.Equal(t, string(expected), string(output))
 	})
+}
+
+const fipsPlanJSONStdoutCanary = "fips-compliance-check-plan-json-canary"
+
+func writeFakeTerraformBinary(t *testing.T, dir string) string {
+	t.Helper()
+
+	script := fmt.Sprintf(`#!/bin/sh
+case "$1" in
+version)
+	if [ "$2" = "-json" ]; then
+		printf '%%s\n' '{"terraform_version":"1.5.7","platform":"linux_amd64","provider_selections":{},"terraform_outdated":false}'
+		exit 0
+	fi
+	echo "Terraform v1.5.7"
+	exit 0
+	;;
+show)
+	if [ "$2" = "-json" ]; then
+		cat <<'PLAN_EOF'
+{
+  "format_version": "1.2",
+  "terraform_version": "1.5.7",
+  "sensitive_plan_leak_canary": %q,
+  "configuration": {
+    "provider_config": {
+      "aws": {
+        "name": "aws",
+        "expressions": {
+          "use_fips_endpoint": {
+            "constant_value": true
+          }
+        }
+      }
+    }
+  }
+}
+PLAN_EOF
+		exit 0
+	fi
+	;;
+esac
+exit 1
+`, fipsPlanJSONStdoutCanary)
+
+	binaryPath := filepath.Join(dir, "terraform")
+	require.NoError(t, os.WriteFile(binaryPath, []byte(script), 0o755))
+	return binaryPath
+}
+
+func TestFipsComplianceCheckDoesNotWritePlanJSONToStdout(t *testing.T) {
+	workDir := t.TempDir()
+	fakeTerraform := writeFakeTerraformBinary(t, workDir)
+
+	planFile := filepath.Join(workDir, "tfplan")
+	require.NoError(t, os.WriteFile(planFile, []byte{}, 0o644))
+
+	tf, err := tfexec.NewTerraform(workDir, fakeTerraform)
+	require.NoError(t, err)
+	tf.SetEnv(map[string]string{})
+
+	var stdoutCapture strings.Builder
+	tf.SetStdout(&stdoutCapture)
+
+	repo := Repo{
+		Name:        repoName,
+		RequireFips: true,
+	}
+
+	executor := &Executor{}
+	err = executor.fipsComplianceCheck(repo, planFile, tf)
+	require.NoError(t, err)
+	assert.NotContains(t, stdoutCapture.String(), fipsPlanJSONStdoutCanary)
 }
